@@ -33,14 +33,11 @@ describe("NextrowsClient", () => {
   describe("extract", () => {
     it("should call /v1/extract with correct parameters", async () => {
       const mockResponse: ExtractResponse = {
-        rows: [
+        success: true,
+        data: [
           { name: "Product 1", price: "$10.00" },
           { name: "Product 2", price: "$20.00" },
         ],
-        metadata: {
-          sourcesProcessed: 1,
-          processingTimeMs: 1234,
-        },
       };
 
       const scope = nock(BASE_URL)
@@ -63,28 +60,68 @@ describe("NextrowsClient", () => {
       expect(response).toEqual(mockResponse);
     });
 
-    it("should handle html type extraction", async () => {
+    it("should handle text type extraction", async () => {
       const mockResponse: ExtractResponse = {
-        rows: [{ title: "Hello World" }],
+        success: true,
+        data: { title: "Hello World" },
       };
 
       const scope = nock(BASE_URL)
         .post("/v1/extract", {
-          type: "html",
-          data: ["<html><body><h1>Hello World</h1></body></html>"],
+          type: "text",
+          data: ["The title is Hello World"],
           prompt: "Extract the title",
         })
         .reply(200, mockResponse);
 
       const response = await client.extract({
-        type: "html",
-        data: ["<html><body><h1>Hello World</h1></body></html>"],
+        type: "text",
+        data: ["The title is Hello World"],
         prompt: "Extract the title",
       });
 
       expect(scope.isDone()).toBe(true);
-      expect(response.rows).toHaveLength(1);
-      expect(response.rows[0].title).toBe("Hello World");
+      expect(response.success).toBe(true);
+      expect(response.data).toEqual({ title: "Hello World" });
+    });
+
+    it("should support schema parameter", async () => {
+      const mockResponse: ExtractResponse = {
+        success: true,
+        data: [
+          ["Product 1", "$10.00"],
+          ["Product 2", "$20.00"],
+        ],
+      };
+
+      const schema = {
+        type: "array",
+        items: {
+          type: "array",
+          items: { type: "string" },
+        },
+      };
+
+      const scope = nock(BASE_URL)
+        .post("/v1/extract", {
+          type: "url",
+          data: ["https://example.com"],
+          schema,
+        })
+        .reply(200, mockResponse);
+
+      const response = await client.extract({
+        type: "url",
+        data: ["https://example.com"],
+        schema,
+      });
+
+      expect(scope.isDone()).toBe(true);
+      expect(response.success).toBe(true);
+      expect(response.data).toEqual([
+        ["Product 1", "$10.00"],
+        ["Product 2", "$20.00"],
+      ]);
     });
 
     it("should handle API errors", async () => {

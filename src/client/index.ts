@@ -1,45 +1,76 @@
 import type { AxiosInstance } from "axios";
 import axios from "axios";
+import {
+  type ExtractRequest,
+  type ExtractResponse,
+  extract,
+} from "../api/extract";
+
+export type {
+  ExtractRequest,
+  ExtractResponse,
+  ExtractSchema,
+  ExtractType,
+} from "../api/extract";
 
 const BASE_URL = "https://api.nextrows.com";
 
-export type ExtractType = "url" | "html";
-
-export interface ExtractRequest {
-  /** Type of data to extract from */
-  type: ExtractType;
-  /** Array of URLs or HTML strings to extract data from */
-  data: string[];
-  /** Natural language prompt describing what data to extract */
-  prompt: string;
-}
-
-export interface ExtractedRow {
-  [key: string]: unknown;
-}
-
-export interface ExtractResponse {
-  /** Extracted data rows */
-  rows: ExtractedRow[];
-  /** Additional metadata about the extraction */
-  metadata?: {
-    /** Number of sources processed */
-    sourcesProcessed: number;
-    /** Processing time in milliseconds */
-    processingTimeMs: number;
-  };
-}
-
+/**
+ * Configuration options for the Nextrows API client.
+ */
 export interface NextrowsClientOptions {
-  /** Base URL for the API (defaults to https://api.nextrows.com) */
+  /**
+   * Base URL for the API.
+   * @default "https://api.nextrows.com"
+   */
   baseUrl?: string;
-  /** Request timeout in milliseconds */
+
+  /**
+   * Request timeout in milliseconds.
+   * @default 30000
+   */
   timeout?: number;
 }
 
+/**
+ * Client for interacting with the Nextrows API.
+ *
+ * @example
+ * ```typescript
+ * import { NextrowsClient } from "nextrows";
+ *
+ * const client = new NextrowsClient("your-api-key");
+ *
+ * // Extract data from a URL
+ * const result = await client.extract({
+ *   type: "url",
+ *   data: ["https://example.com/products"],
+ *   prompt: "Extract all product names and prices"
+ * });
+ *
+ * console.log(result.data);
+ * ```
+ */
 export class NextrowsClient {
   private readonly client: AxiosInstance;
 
+  /**
+   * Creates a new Nextrows API client.
+   *
+   * @param apiKey - Your Nextrows API key (Bearer token)
+   * @param options - Optional client configuration
+   *
+   * @example
+   * ```typescript
+   * // Basic usage
+   * const client = new NextrowsClient("sk-nr-your-api-key");
+   *
+   * // With custom options
+   * const client = new NextrowsClient("sk-nr-your-api-key", {
+   *   timeout: 60000, // 60 second timeout
+   * });
+   * ```
+   */
   constructor(
     readonly apiKey: string,
     options: NextrowsClientOptions = {},
@@ -57,15 +88,10 @@ export class NextrowsClient {
   }
 
   /**
-   * Extract structured data from URLs or HTML content using AI
-   * @param request - The extraction request parameters
-   * @returns The extracted data
+   * Extract structured data from URLs or text content using AI.
+   * @see {@link extract} for detailed documentation
    */
   async extract(request: ExtractRequest): Promise<ExtractResponse> {
-    const response = await this.client.post<ExtractResponse>(
-      "/v1/extract",
-      request,
-    );
-    return response.data;
+    return extract(this.client, request);
   }
 }
