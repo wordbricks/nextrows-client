@@ -1,0 +1,42 @@
+{
+  "name": "@wordbrick/nextrows-client",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wordbrick/nextrows-client"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "dev": "concurrently \"vite --config playground/vite.config.ts\" \"bun --watch playground/server.ts\"",
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "build:playground": "vite build --config playground/vite.config.ts",
+    "preview": "vite preview --config playground/vite.config.ts",
+    "prepublishOnly": "npm run build",
+    "test": "vitest"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "dependencies": {
+    "axios": "^1.13.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.3.8",
+    "@types/node": "^25.0.1",
+    "concurrently": "9.2.1",
+    "nock": "^14.0.10",
+    "tsup": "^8.5.1",
+    "typescript": "~5.9.3",
+    "vitest": "^4.0.15"
+  }
+}
