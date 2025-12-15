@@ -4,6 +4,18 @@
 
 TypeScript client for Nextrows Open API.
 
+## Getting Started
+
+### API Key
+
+To use this client, you need a NextRows API key. Create one at:
+
+**[NextRows Dashboard](https://nextrows.com/dashboard/overview)** → Create API Key
+
+### Documentation
+
+For complete API documentation, visit: **[NextRows API Docs](https://nextrows.com/docs/api)**
+
 ## Installation
 
 ```bash
