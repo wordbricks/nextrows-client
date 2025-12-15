@@ -1,11 +1,26 @@
 import type { AxiosInstance } from "axios";
 import axios from "axios";
 import {
+  type RunAppJsonRequest,
+  type RunAppJsonResponse,
+  runAppJson,
+} from "../api/apps";
+import { type GetCreditsResponse, getCredits } from "../api/credits";
+import {
   type ExtractRequest,
   type ExtractResponse,
   extract,
 } from "../api/extract";
 
+export type {
+  AppCellValue,
+  AppInput,
+  AppInputValue,
+  RunAppJsonData,
+  RunAppJsonRequest,
+  RunAppJsonResponse,
+} from "../api/apps";
+export type { GetCreditsResponse } from "../api/credits";
 export type {
   ExtractRequest,
   ExtractResponse,
@@ -93,5 +108,41 @@ export class NextrowsClient {
    */
   async extract(request: ExtractRequest): Promise<ExtractResponse> {
     return extract(this.client, request);
+  }
+
+  /**
+   * Get the current credit balance for the authenticated user.
+   * @see {@link getCredits} for detailed documentation
+   */
+  async getCredits(): Promise<GetCreditsResponse> {
+    return getCredits(this.client);
+  }
+
+  /**
+   * Run a published NextRows app and get JSON output.
+   *
+   * Executes a published NextRows app with the provided inputs and returns
+   * the result as structured JSON data.
+   *
+   * @see {@link runAppJson} for detailed documentation
+   *
+   * @example
+   * ```typescript
+   * const result = await client.runAppJson({
+   *   appId: "abc123xyz",
+   *   inputs: [
+   *     { key: "url", value: "https://example.com/products" },
+   *     { key: "maxItems", value: 10 }
+   *   ]
+   * });
+   *
+   * if (result.success && result.data) {
+   *   console.log("Columns:", result.data.columns);
+   *   console.log("Rows:", result.data.rows);
+   * }
+   * ```
+   */
+  async runAppJson(request: RunAppJsonRequest): Promise<RunAppJsonResponse> {
+    return runAppJson(this.client, request);
   }
 }

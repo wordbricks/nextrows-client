@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@wordbrick/nextrows-client.svg)](https://www.npmjs.com/package/@wordbrick/nextrows-client)
 
-Typescript client for Nextrows Open API.
+TypeScript client for Nextrows Open API.
 
 ## Installation
 
@@ -10,43 +10,76 @@ Typescript client for Nextrows Open API.
 npm install @wordbrick/nextrows-client
 ```
 
-## How to use
+## Quick Start
 
 ```typescript
 import { NextrowsClient } from "@wordbrick/nextrows-client";
 
-async function main() {
-  // 1. Initialize Client
-  const client = new NextrowsClient(
-    process.env.NEXTROWS_APP_KEY!,
-    process.env.NEXTROWS_APP_SECRET!,
-    true // isMock: true for mock investment, false for real
-  );
+const client = new NextrowsClient("sk-nr-your-api-key");
+```
 
-  // 2. Issue Access Token
-  // You should manage the token yourself (e.g. cache it)
-  const tokenResponse = await client.issueAccessToken();
-  const token = tokenResponse.token;
-  console.log('Access Token:', token);
+## API Methods
 
-  // 3. Call APIs
+### Extract Data
 
-  // Example: Get Daily Balance Yield (ka01690)
-  const dailyBalance = await client.getDailyBalanceYield(token, "20231225");
-  console.log('Daily Balance:', dailyBalance);
+Extract structured data from URLs or text content using AI.
 
-  // Example: Get Real-time Stock Search Ranking (ka00198)
-  // qry_tp: '1'(1min), '2'(10min), '3'(1hour), '4'(cumulative), '5'(30sec)
-  const ranking = await client.getStockSearchRanking(token, '1');
-  console.log('Stock Ranking:', ranking.item_inq_rank);
+```typescript
+const result = await client.extract({
+  type: "url",
+  data: ["https://example.com/products"],
+  prompt: "Extract all product names and prices",
+});
+
+if (result.success) {
+  console.log(result.data);
 }
-main();
+```
+
+### Run App
+
+Run a published NextRows app and get JSON output.
+
+```typescript
+const result = await client.runAppJson({
+  appId: "abc123xyz",
+  inputs: [
+    { key: "url", value: "https://example.com/products" },
+    { key: "maxItems", value: 10 },
+  ],
+});
+
+if (result.success && result.data) {
+  console.log("Columns:", result.data.columns);
+  console.log("Rows:", result.data.rows);
+  console.log(`Run ID: ${result.runId}`);
+  console.log(`Elapsed time: ${result.elapsedTime}ms`);
+}
+```
+
+### Get Credits
+
+Get the current credit balance for the authenticated user.
+
+```typescript
+const result = await client.getCredits();
+
+if (result.success && result.data) {
+  console.log(`Remaining credits: ${result.data.credits}`);
+}
+```
+
+## Configuration
+
+```typescript
+const client = new NextrowsClient("sk-nr-your-api-key", {
+  baseUrl: "https://api.nextrows.com", // default
+  timeout: 30000, // default, in milliseconds
+});
 ```
 
 ## Features
 
-- **Typed Request/Response**: All request and response bodies are fully typed.
-
-## API Implementation Status
-
-[(See full list in docs or type definitions)](./IMPLEMENTATION_STATUS.md)
+- **Fully Typed**: All request and response types are exported for TypeScript support
+- **Simple API**: Easy-to-use methods that mirror the REST API
+- **Configurable**: Custom base URL and timeout options
