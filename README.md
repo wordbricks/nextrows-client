@@ -1,4 +1,4 @@
-# @wordbrick/nextrows-client
+# @wordbricks/nextrows-client
 
 [![npm version](https://img.shields.io/npm/v/@wordbricks/nextrows-client.svg)](https://www.npmjs.com/package/@wordbricks/nextrows-client)
 
@@ -19,13 +19,25 @@ For complete API documentation, visit: **[NextRows API Docs](https://nextrows.co
 ## Installation
 
 ```bash
-npm install @wordbrick/nextrows-client
+npm install @wordbricks/nextrows-client
+```
+
+```bash
+yarn add @wordbricks/nextrows-client
+```
+
+```bash
+pnpm add @wordbricks/nextrows-client
+```
+
+```bash
+bun add @wordbricks/nextrows-client
 ```
 
 ## Quick Start
 
 ```typescript
-import { NextrowsClient } from "@wordbrick/nextrows-client";
+import { NextrowsClient } from "@wordbricks/nextrows-client";
 
 const client = new NextrowsClient("sk-nr-your-api-key");
 ```
