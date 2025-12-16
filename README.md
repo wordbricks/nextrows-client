@@ -1,6 +1,6 @@
 # @wordbrick/nextrows-client
 
-[![npm version](https://img.shields.io/npm/v/@wordbrick/nextrows-client.svg)](https://www.npmjs.com/package/@wordbrick/nextrows-client)
+[![npm version](https://img.shields.io/npm/v/@wordbricks/nextrows-client.svg)](https://www.npmjs.com/package/@wordbricks/nextrows-client)
 
 TypeScript client for Nextrows Open API.
 
