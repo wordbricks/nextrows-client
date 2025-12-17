@@ -26,6 +26,7 @@ export type {
   ExtractResponse,
   ExtractSchema,
   ExtractType,
+  JsonSchema,
 } from "../api/extract";
 
 const BASE_URL = "https://api.nextrows.com";
@@ -33,7 +34,12 @@ const BASE_URL = "https://api.nextrows.com";
 /**
  * Configuration options for the Nextrows API client.
  */
-export interface NextrowsClientOptions {
+export interface NextrowsOptions {
+  /**
+   * Your Nextrows API key (Bearer token)
+   */
+  apiKey: string;
+
   /**
    * Base URL for the API.
    * @default "https://api.nextrows.com"
@@ -52,9 +58,9 @@ export interface NextrowsClientOptions {
  *
  * @example
  * ```typescript
- * import { NextrowsClient } from "nextrows";
+ * import { Nextrows } from "nextrows";
  *
- * const client = new NextrowsClient("your-api-key");
+ * const client = new Nextrows({ apiKey: "your-api-key" });
  *
  * // Extract data from a URL
  * const result = await client.extract({
@@ -66,31 +72,30 @@ export interface NextrowsClientOptions {
  * console.log(result.data);
  * ```
  */
-export class NextrowsClient {
+export class Nextrows {
   private readonly client: AxiosInstance;
+  readonly apiKey: string;
 
   /**
    * Creates a new Nextrows API client.
    *
-   * @param apiKey - Your Nextrows API key (Bearer token)
-   * @param options - Optional client configuration
+   * @param options - Client configuration including API key
    *
    * @example
    * ```typescript
    * // Basic usage
-   * const client = new NextrowsClient("sk-nr-your-api-key");
+   * const client = new Nextrows({ apiKey: "sk-nr-your-api-key" });
    *
    * // With custom options
-   * const client = new NextrowsClient("sk-nr-your-api-key", {
+   * const client = new Nextrows({
+   *   apiKey: "sk-nr-your-api-key",
    *   timeout: 60000, // 60 second timeout
    * });
    * ```
    */
-  constructor(
-    readonly apiKey: string,
-    options: NextrowsClientOptions = {},
-  ) {
-    const { baseUrl = BASE_URL, timeout = 30000 } = options;
+  constructor(options: NextrowsOptions) {
+    const { apiKey, baseUrl = BASE_URL, timeout = 30000 } = options;
+    this.apiKey = apiKey;
 
     this.client = axios.create({
       baseURL: baseUrl,

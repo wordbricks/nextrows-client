@@ -1,4 +1,5 @@
 import type { AxiosInstance } from "axios";
+import type { ZodType } from "zod";
 
 /**
  * The type of data source to extract from.
@@ -9,20 +10,18 @@ export type ExtractType = "url" | "text";
 
 /**
  * JSON Schema definition for structured extraction output.
- * Must conform to JSON Schema specification.
+ */
+export interface JsonSchema {
+  [key: string]: unknown;
+}
+
+/**
+ * Schema for structured extraction output.
+ * Can be either a JSON Schema object or a Zod schema.
  *
  * @example
  * ```typescript
- * // Schema for extracting a table as 2D array
- * const schema: ExtractSchema = {
- *   type: "array",
- *   items: {
- *     type: "array",
- *     items: { type: "string" }
- *   }
- * };
- *
- * // Schema for extracting product objects
+ * // Using JSON Schema
  * const schema: ExtractSchema = {
  *   type: "array",
  *   items: {
@@ -33,10 +32,62 @@ export type ExtractType = "url" | "text";
  *     }
  *   }
  * };
+ *
+ * // Using Zod schema (requires Zod 3.24+)
+ * import { z } from "zod/v4";
+ *
+ * const schema = z.array(z.object({
+ *   name: z.string(),
+ *   price: z.number()
+ * }));
  * ```
  */
-export interface ExtractSchema {
-  [key: string]: unknown;
+export type ExtractSchema = JsonSchema | ZodType;
+
+/**
+ * Check if a value is a Zod schema.
+ */
+function isZodSchema(schema: ExtractSchema): schema is ZodType {
+  return (
+    schema !== null &&
+    typeof schema === "object" &&
+    "_def" in schema &&
+    "safeParse" in schema &&
+    typeof (schema as ZodType).safeParse === "function"
+  );
+}
+
+// Cache the zod module to avoid repeated dynamic imports
+let zodModule: { toJSONSchema?: (schema: ZodType) => JsonSchema } | null = null;
+
+/**
+ * Convert a schema to JSON Schema format.
+ * If the schema is a Zod schema, it will be converted using Zod's toJSONSchema().
+ */
+async function convertToJsonSchema(schema: ExtractSchema): Promise<JsonSchema> {
+  if (isZodSchema(schema)) {
+    // Try to use cached zod module first
+    if (zodModule?.toJSONSchema) {
+      return zodModule.toJSONSchema(schema);
+    }
+
+    // Dynamically import zod/v4 (works in both ESM and CJS environments)
+    try {
+      const z = await import("zod/v4");
+      if (z && typeof z.toJSONSchema === "function") {
+        zodModule = z;
+        return z.toJSONSchema(schema) as JsonSchema;
+      }
+    } catch {
+      // import failed, zod/v4 not available
+    }
+
+    throw new Error(
+      "Zod schema conversion requires Zod 3.24+ with zod/v4 subpath. " +
+        "Please install Zod 3.24+ or use a JSON Schema object directly.",
+    );
+  }
+  return schema;
 }
 
 /**
@@ -69,21 +120,30 @@ export interface ExtractRequest {
   prompt?: string;
 
   /**
-   * Optional JSON Schema for consistent and predictable extraction results.
+   * Optional schema for consistent and predictable extraction results.
+   * Can be a JSON Schema object or a Zod schema (requires Zod 3.24+).
    * If not provided, the system will auto-generate the structure based on the data.
    *
    * @example
-   * ```json
-   * {
-   *   "type": "array",
-   *   "items": {
-   *     "type": "object",
-   *     "properties": {
-   *       "name": { "type": "string" },
-   *       "price": { "type": "number" }
+   * ```typescript
+   * // Using JSON Schema
+   * schema: {
+   *   type: "array",
+   *   items: {
+   *     type: "object",
+   *     properties: {
+   *       name: { type: "string" },
+   *       price: { type: "number" }
    *     }
    *   }
    * }
+   *
+   * // Using Zod schema (requires Zod 3.24+)
+   * import { z } from "zod/v4";
+   * schema: z.array(z.object({
+   *   name: z.string(),
+   *   price: z.number()
+   * }))
    * ```
    */
   schema?: ExtractSchema;
@@ -151,6 +211,11 @@ export async function extract(
   client: AxiosInstance,
   request: ExtractRequest,
 ): Promise<ExtractResponse> {
-  const response = await client.post<ExtractResponse>("/v1/extract", request);
+  // Convert Zod schema to JSON Schema if needed
+  const payload = request.schema
+    ? { ...request, schema: await convertToJsonSchema(request.schema) }
+    : request;
+
+  const response = await client.post<ExtractResponse>("/v1/extract", payload);
   return response.data;
 }

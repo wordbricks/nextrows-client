@@ -37,9 +37,9 @@ bun add @wordbricks/nextrows-client
 ## Quick Start
 
 ```typescript
-import { NextrowsClient } from "@wordbricks/nextrows-client";
+import { Nextrows } from "@wordbricks/nextrows-client";
 
-const client = new NextrowsClient("sk-nr-your-api-key");
+const client = new Nextrows({ apiKey: "sk-nr-your-api-key" });
 ```
 
 ## API Methods
@@ -58,6 +58,27 @@ const result = await client.extract({
 if (result.success) {
   console.log(result.data);
 }
+```
+
+#### Using Zod Schema
+
+You can use Zod schemas to define the extraction output structure (requires Zod 3.24+):
+
+```typescript
+import { z } from "zod/v4";
+
+const productSchema = z.array(
+  z.object({
+    name: z.string(),
+    price: z.number(),
+  })
+);
+
+const result = await client.extract({
+  type: "url",
+  data: ["https://example.com/products"],
+  schema: productSchema,
+});
 ```
 
 ### Run App
@@ -96,7 +117,8 @@ if (result.success && result.data) {
 ## Configuration
 
 ```typescript
-const client = new NextrowsClient("sk-nr-your-api-key", {
+const client = new Nextrows({
+  apiKey: "sk-nr-your-api-key",
   baseUrl: "https://api.nextrows.com", // default
   timeout: 30000, // default, in milliseconds
 });
@@ -107,3 +129,4 @@ const client = new NextrowsClient("sk-nr-your-api-key", {
 - **Fully Typed**: All request and response types are exported for TypeScript support
 - **Simple API**: Easy-to-use methods that mirror the REST API
 - **Configurable**: Custom base URL and timeout options
+- **Zod Support**: Use Zod schemas for type-safe extraction (optional, requires Zod 3.24+)

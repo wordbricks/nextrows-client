@@ -1,16 +1,17 @@
 import nock from "nock";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { z } from "zod/v4";
 import type { ExtractResponse } from "./index";
-import { NextrowsClient } from "./index";
+import { Nextrows } from "./index";
 
 const BASE_URL = "https://api.nextrows.com";
 
-describe("NextrowsClient", () => {
-  let client: NextrowsClient;
+describe("Nextrows", () => {
+  let client: Nextrows;
   const apiKey = "sk-nr-test-api-key";
 
   beforeEach(() => {
-    client = new NextrowsClient(apiKey);
+    client = new Nextrows({ apiKey });
     nock.cleanAll();
   });
 
@@ -19,15 +20,16 @@ describe("NextrowsClient", () => {
   });
 
   it("should be instantiated with api key", () => {
-    expect(client).toBeInstanceOf(NextrowsClient);
+    expect(client).toBeInstanceOf(Nextrows);
     expect(client.apiKey).toBe(apiKey);
   });
 
   it("should allow custom base URL", () => {
-    const customClient = new NextrowsClient(apiKey, {
+    const customClient = new Nextrows({
+      apiKey,
       baseUrl: "https://custom.api.com",
     });
-    expect(customClient).toBeInstanceOf(NextrowsClient);
+    expect(customClient).toBeInstanceOf(Nextrows);
   });
 
   describe("extract", () => {
@@ -85,7 +87,7 @@ describe("NextrowsClient", () => {
       expect(response.data).toEqual({ title: "Hello World" });
     });
 
-    it("should support schema parameter", async () => {
+    it("should support JSON schema parameter", async () => {
       const mockResponse: ExtractResponse = {
         success: true,
         data: [
@@ -121,6 +123,49 @@ describe("NextrowsClient", () => {
       expect(response.data).toEqual([
         ["Product 1", "$10.00"],
         ["Product 2", "$20.00"],
+      ]);
+    });
+
+    it("should support Zod schema parameter", async () => {
+      const mockResponse: ExtractResponse = {
+        success: true,
+        data: [
+          { name: "Product 1", price: 10 },
+          { name: "Product 2", price: 20 },
+        ],
+      };
+
+      const zodSchema = z.array(
+        z.object({
+          name: z.string(),
+          price: z.number(),
+        }),
+      );
+
+      // The Zod schema should be converted to JSON Schema
+      const scope = nock(BASE_URL)
+        .post("/v1/extract", (body) => {
+          // Verify the schema was converted to JSON Schema format
+          expect(body.schema).toBeDefined();
+          expect(body.schema.type).toBe("array");
+          expect(body.schema.items.type).toBe("object");
+          expect(body.schema.items.properties.name.type).toBe("string");
+          expect(body.schema.items.properties.price.type).toBe("number");
+          return true;
+        })
+        .reply(200, mockResponse);
+
+      const response = await client.extract({
+        type: "url",
+        data: ["https://example.com"],
+        schema: zodSchema,
+      });
+
+      expect(scope.isDone()).toBe(true);
+      expect(response.success).toBe(true);
+      expect(response.data).toEqual([
+        { name: "Product 1", price: 10 },
+        { name: "Product 2", price: 20 },
       ]);
     });
 
