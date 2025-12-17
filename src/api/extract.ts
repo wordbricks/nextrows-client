@@ -1,5 +1,4 @@
 import type { AxiosInstance } from "axios";
-import type { ZodType } from "zod";
 
 /**
  * The type of data source to extract from.
@@ -13,6 +12,15 @@ export type ExtractType = "url" | "text";
  */
 export interface JsonSchema {
   [key: string]: unknown;
+}
+
+/**
+ * Generic Zod schema type that works with both Zod v3 and v4.
+ * We use a structural type to avoid coupling to specific Zod versions.
+ */
+export interface ZodLike {
+  safeParse: (data: unknown) => unknown;
+  _def: unknown;
 }
 
 /**
@@ -42,23 +50,24 @@ export interface JsonSchema {
  * }));
  * ```
  */
-export type ExtractSchema = JsonSchema | ZodType;
+export type ExtractSchema = JsonSchema | ZodLike;
 
 /**
  * Check if a value is a Zod schema.
  */
-function isZodSchema(schema: ExtractSchema): schema is ZodType {
+function isZodSchema(schema: ExtractSchema): schema is ZodLike {
   return (
     schema !== null &&
     typeof schema === "object" &&
-    "_def" in schema &&
+    ("_def" in schema || "_zod" in schema) &&
     "safeParse" in schema &&
-    typeof (schema as ZodType).safeParse === "function"
+    typeof (schema as ZodLike).safeParse === "function"
   );
 }
 
 // Cache the zod module to avoid repeated dynamic imports
-let zodModule: { toJSONSchema?: (schema: ZodType) => JsonSchema } | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let zodModule: { toJSONSchema?: (schema: any) => JsonSchema } | null = null;
 
 /**
  * Convert a schema to JSON Schema format.
@@ -76,7 +85,9 @@ async function convertToJsonSchema(schema: ExtractSchema): Promise<JsonSchema> {
       const z = await import("zod/v4");
       if (z && typeof z.toJSONSchema === "function") {
         zodModule = z;
-        return z.toJSONSchema(schema) as JsonSchema;
+        // Cast to any since we're bridging Zod v3 types with v4's toJSONSchema
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return z.toJSONSchema(schema as any) as JsonSchema;
       }
     } catch {
       // import failed, zod/v4 not available
