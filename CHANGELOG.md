@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - 2025-12-18
+
+### Breaking Changes
+
+- **`runAppJson` response format changed**: The `data` field is now an array of JSON objects (with column names as keys) instead of `{ columns, rows }` structure
+  ```typescript
+  // Before
+  result.data.columns // ["Name", "Price"]
+  result.data.rows    // [["Product A", 29.99], ...]
+
+  // After
+  result.data // [{ Name: "Product A", Price: 29.99 }, ...]
+  ```
+
+### Added
+
+- **`runAppTable` method**: New endpoint for running apps with table-formatted output
+  ```typescript
+  const result = await client.runAppTable({
+    appId: "abc123xyz",
+    inputs: [{ key: "url", value: "https://example.com" }]
+  });
+
+  if (result.success && result.data) {
+    console.log(result.data.columns);   // ["Name", "Price", "URL"]
+    console.log(result.data.tableData); // [["Product A", 29.99, "..."], ...]
+  }
+  ```
+- New type exports: `AppJsonRow`, `RunAppRequest`, `RunAppTableData`, `RunAppTableRequest`, `RunAppTableResponse`
+
 ## [0.1.0] - 2025-12-17
 
 ### Breaking Changes

@@ -23,9 +23,9 @@ export interface AppInput {
 }
 
 /**
- * Request parameters for the run app JSON API endpoint.
+ * Request parameters for running an app.
  */
-export interface RunAppJsonRequest {
+export interface RunAppRequest {
   /**
    * The ID of the app to run.
    * @example "abc123xyz"
@@ -47,14 +47,70 @@ export interface RunAppJsonRequest {
 }
 
 /**
- * Cell value type for app output rows.
+ * Cell value type for app output data.
  */
-export type AppCellValue = string | number | boolean;
+export type AppCellValue = string | number | boolean | null;
 
 /**
- * The structured JSON output data from an app run.
+ * A row of JSON data from an app run (column names as keys).
  */
-export interface RunAppJsonData {
+export type AppJsonRow = Record<string, AppCellValue>;
+
+/**
+ * Request parameters for the run app JSON API endpoint.
+ */
+export type RunAppJsonRequest = RunAppRequest;
+
+/**
+ * Response from the run app JSON API endpoint.
+ */
+export interface RunAppJsonResponse {
+  /**
+   * Whether the request was successful.
+   */
+  success: boolean;
+
+  /**
+   * Array of JSON objects representing the output data.
+   * Each object represents a row with column names as keys.
+   *
+   * @example
+   * ```typescript
+   * [
+   *   { "Name": "Product A", "Price": 29.99, "URL": "https://example.com/product-a" },
+   *   { "Name": "Product B", "Price": 49.99, "URL": "https://example.com/product-b" }
+   * ]
+   * ```
+   */
+  data?: AppJsonRow[];
+
+  /**
+   * Unique identifier for this run.
+   * @example "run_abc123"
+   */
+  runId?: string;
+
+  /**
+   * Time taken to execute the app in milliseconds.
+   * @example 2500
+   */
+  elapsedTime?: number;
+
+  /**
+   * Error message (present when success is false).
+   */
+  error?: string;
+}
+
+/**
+ * Request parameters for the run app table API endpoint.
+ */
+export type RunAppTableRequest = RunAppRequest;
+
+/**
+ * The table data structure from an app run.
+ */
+export interface RunAppTableData {
   /**
    * Column headers of the result table.
    * @example ["Name", "Price", "URL"]
@@ -73,22 +129,22 @@ export interface RunAppJsonData {
    * ]
    * ```
    */
-  rows: AppCellValue[][];
+  tableData: AppCellValue[][];
 }
 
 /**
- * Response from the run app JSON API endpoint.
+ * Response from the run app table API endpoint.
  */
-export interface RunAppJsonResponse {
+export interface RunAppTableResponse {
   /**
    * Whether the request was successful.
    */
   success: boolean;
 
   /**
-   * The structured JSON output from the app (present when success is true).
+   * Table data with column headers and rows (present when success is true).
    */
-  data?: RunAppJsonData;
+  data?: RunAppTableData;
 
   /**
    * Unique identifier for this run.
@@ -112,12 +168,12 @@ export interface RunAppJsonResponse {
  * Run a published NextRows app and get JSON output.
  *
  * Executes a published NextRows app with the provided inputs and returns
- * the result as structured JSON data. The response includes column headers
- * and row data that can be easily integrated into your applications.
+ * the result as an array of JSON objects. Each object represents a row
+ * with column names as keys.
  *
  * @param client - The Axios instance to use for the request
  * @param request - The run app request parameters
- * @returns Promise resolving to the app run response with success status and structured data
+ * @returns Promise resolving to the app run response with success status and JSON data
  * @throws {AxiosError} When the API request fails (e.g., 401 for invalid API key, 402 for credits exhausted, 404 for app not found)
  *
  * @example
@@ -131,10 +187,9 @@ export interface RunAppJsonResponse {
  * });
  *
  * if (result.success && result.data) {
- *   console.log("Columns:", result.data.columns);
- *   console.log("Rows:", result.data.rows);
- *   console.log(`Run ID: ${result.runId}`);
- *   console.log(`Elapsed time: ${result.elapsedTime}ms`);
+ *   for (const row of result.data) {
+ *     console.log(row.Name, row.Price);
+ *   }
  * }
  * ```
  */
@@ -144,6 +199,46 @@ export async function runAppJson(
 ): Promise<RunAppJsonResponse> {
   const response = await client.post<RunAppJsonResponse>(
     "/v1/apps/run/json",
+    request,
+  );
+  return response.data;
+}
+
+/**
+ * Run a published NextRows app and get table output.
+ *
+ * Executes a published NextRows app with the provided inputs and returns
+ * the result as table data with column headers and rows.
+ *
+ * @param client - The Axios instance to use for the request
+ * @param request - The run app request parameters
+ * @returns Promise resolving to the app run response with success status and table data
+ * @throws {AxiosError} When the API request fails (e.g., 401 for invalid API key, 402 for credits exhausted, 404 for app not found)
+ *
+ * @example
+ * ```typescript
+ * const result = await client.runAppTable({
+ *   appId: "abc123xyz",
+ *   inputs: [
+ *     { key: "url", value: "https://example.com/products" },
+ *     { key: "maxItems", value: 10 }
+ *   ]
+ * });
+ *
+ * if (result.success && result.data) {
+ *   console.log("Columns:", result.data.columns);
+ *   for (const row of result.data.tableData) {
+ *     console.log(row);
+ *   }
+ * }
+ * ```
+ */
+export async function runAppTable(
+  client: AxiosInstance,
+  request: RunAppTableRequest,
+): Promise<RunAppTableResponse> {
+  const response = await client.post<RunAppTableResponse>(
+    "/v1/apps/run/table",
     request,
   );
   return response.data;

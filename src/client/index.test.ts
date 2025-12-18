@@ -1,7 +1,11 @@
 import nock from "nock";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod/v4";
-import type { ExtractResponse } from "./index";
+import type {
+  ExtractResponse,
+  RunAppJsonResponse,
+  RunAppTableResponse,
+} from "./index";
 import { Nextrows } from "./index";
 
 const BASE_URL = "https://api.nextrows.com";
@@ -180,6 +184,112 @@ describe("Nextrows", () => {
           type: "url",
           data: ["https://example.com"],
           prompt: "Extract data",
+        }),
+      ).rejects.toThrow();
+    });
+  });
+
+  describe("runAppJson", () => {
+    it("should call /v1/apps/run/json with correct parameters", async () => {
+      const mockResponse: RunAppJsonResponse = {
+        success: true,
+        data: [
+          { Name: "Product A", Price: 29.99, URL: "https://example.com/a" },
+          { Name: "Product B", Price: 49.99, URL: "https://example.com/b" },
+        ],
+        runId: "run_abc123",
+        elapsedTime: 2500,
+      };
+
+      const scope = nock(BASE_URL)
+        .post("/v1/apps/run/json", {
+          appId: "abc123xyz",
+          inputs: [{ key: "max-items", value: 10 }],
+        })
+        .matchHeader("Authorization", `Bearer ${apiKey}`)
+        .matchHeader("Content-Type", "application/json")
+        .reply(200, mockResponse);
+
+      const response = await client.runAppJson({
+        appId: "abc123xyz",
+        inputs: [{ key: "max-items", value: 10 }],
+      });
+
+      expect(scope.isDone()).toBe(true);
+      expect(response.success).toBe(true);
+      expect(response.data).toEqual([
+        { Name: "Product A", Price: 29.99, URL: "https://example.com/a" },
+        { Name: "Product B", Price: 49.99, URL: "https://example.com/b" },
+      ]);
+      expect(response.runId).toBe("run_abc123");
+      expect(response.elapsedTime).toBe(2500);
+    });
+
+    it("should handle app not found error", async () => {
+      nock(BASE_URL).post("/v1/apps/run/json").reply(404, {
+        success: false,
+        error: "App not found",
+      });
+
+      await expect(
+        client.runAppJson({
+          appId: "invalid-app",
+          inputs: [],
+        }),
+      ).rejects.toThrow();
+    });
+  });
+
+  describe("runAppTable", () => {
+    it("should call /v1/apps/run/table with correct parameters", async () => {
+      const mockResponse: RunAppTableResponse = {
+        success: true,
+        data: {
+          columns: ["Name", "Price", "URL"],
+          tableData: [
+            ["Product A", 29.99, "https://example.com/a"],
+            ["Product B", 49.99, "https://example.com/b"],
+          ],
+        },
+        runId: "run_abc123",
+        elapsedTime: 2500,
+      };
+
+      const scope = nock(BASE_URL)
+        .post("/v1/apps/run/table", {
+          appId: "abc123xyz",
+          inputs: [{ key: "url", value: "https://example.com" }],
+        })
+        .matchHeader("Authorization", `Bearer ${apiKey}`)
+        .matchHeader("Content-Type", "application/json")
+        .reply(200, mockResponse);
+
+      const response = await client.runAppTable({
+        appId: "abc123xyz",
+        inputs: [{ key: "url", value: "https://example.com" }],
+      });
+
+      expect(scope.isDone()).toBe(true);
+      expect(response.success).toBe(true);
+      expect(response.data?.columns).toEqual(["Name", "Price", "URL"]);
+      expect(response.data?.tableData).toEqual([
+        ["Product A", 29.99, "https://example.com/a"],
+        ["Product B", 49.99, "https://example.com/b"],
+      ]);
+      expect(response.runId).toBe("run_abc123");
+      expect(response.elapsedTime).toBe(2500);
+    });
+
+    it("should handle credits exhausted error", async () => {
+      nock(BASE_URL).post("/v1/apps/run/table").reply(402, {
+        success: false,
+        error: "Credits exhausted",
+      });
+
+      await expect(
+        client.runAppTable({
+          appId: "abc123xyz",
+          inputs: [],
         }),
       ).rejects.toThrow();
     });

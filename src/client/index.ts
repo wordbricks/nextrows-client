@@ -3,7 +3,10 @@ import axios from "axios";
 import {
   type RunAppJsonRequest,
   type RunAppJsonResponse,
+  type RunAppTableRequest,
+  type RunAppTableResponse,
   runAppJson,
+  runAppTable,
 } from "../api/apps";
 import { type GetCreditsResponse, getCredits } from "../api/credits";
 import {
@@ -16,9 +19,13 @@ export type {
   AppCellValue,
   AppInput,
   AppInputValue,
-  RunAppJsonData,
+  AppJsonRow,
   RunAppJsonRequest,
   RunAppJsonResponse,
+  RunAppRequest,
+  RunAppTableData,
+  RunAppTableRequest,
+  RunAppTableResponse,
 } from "../api/apps";
 export type { GetCreditsResponse } from "../api/credits";
 export type {
@@ -127,7 +134,8 @@ export class Nextrows {
    * Run a published NextRows app and get JSON output.
    *
    * Executes a published NextRows app with the provided inputs and returns
-   * the result as structured JSON data.
+   * the result as an array of JSON objects. Each object represents a row
+   * with column names as keys.
    *
    * @see {@link runAppJson} for detailed documentation
    *
@@ -142,12 +150,43 @@ export class Nextrows {
    * });
    *
    * if (result.success && result.data) {
-   *   console.log("Columns:", result.data.columns);
-   *   console.log("Rows:", result.data.rows);
+   *   for (const row of result.data) {
+   *     console.log(row.Name, row.Price);
+   *   }
    * }
    * ```
    */
   async runAppJson(request: RunAppJsonRequest): Promise<RunAppJsonResponse> {
     return runAppJson(this.client, request);
+  }
+
+  /**
+   * Run a published NextRows app and get table output.
+   *
+   * Executes a published NextRows app with the provided inputs and returns
+   * the result as table data with column headers and rows.
+   *
+   * @see {@link runAppTable} for detailed documentation
+   *
+   * @example
+   * ```typescript
+   * const result = await client.runAppTable({
+   *   appId: "abc123xyz",
+   *   inputs: [
+   *     { key: "url", value: "https://example.com/products" },
+   *     { key: "maxItems", value: 10 }
+   *   ]
+   * });
+   *
+   * if (result.success && result.data) {
+   *   console.log("Columns:", result.data.columns);
+   *   for (const row of result.data.tableData) {
+   *     console.log(row);
+   *   }
+   * }
+   * ```
+   */
+  async runAppTable(request: RunAppTableRequest): Promise<RunAppTableResponse> {
+    return runAppTable(this.client, request);
   }
 }
