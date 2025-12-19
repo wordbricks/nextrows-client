@@ -1,6 +1,7 @@
 import type { AxiosInstance } from "axios";
 import axios from "axios";
 import {
+  type AppJsonRow,
   type RunAppJsonRequest,
   type RunAppJsonResponse,
   type RunAppTableRequest,
@@ -137,10 +138,12 @@ export class Nextrows {
    * the result as an array of JSON objects. Each object represents a row
    * with column names as keys.
    *
+   * @typeParam T - The type of each row in the response data array. Defaults to `AppJsonRow`.
    * @see {@link runAppJson} for detailed documentation
    *
    * @example
    * ```typescript
+   * // With default type
    * const result = await client.runAppJson({
    *   appId: "abc123xyz",
    *   inputs: [
@@ -154,10 +157,30 @@ export class Nextrows {
    *     console.log(row.Name, row.Price);
    *   }
    * }
+   *
+   * // With custom type
+   * interface Product {
+   *   name: string;
+   *   price: number;
+   *   url: string;
+   * }
+   *
+   * const typedResult = await client.runAppJson<Product>({
+   *   appId: "abc123xyz",
+   *   inputs: [{ key: "url", value: "https://example.com/products" }]
+   * });
+   *
+   * if (typedResult.success && typedResult.data) {
+   *   for (const product of typedResult.data) {
+   *     console.log(product.name, product.price); // Fully typed!
+   *   }
+   * }
    * ```
    */
-  async runAppJson(request: RunAppJsonRequest): Promise<RunAppJsonResponse> {
-    return runAppJson(this.client, request);
+  async runAppJson<T = AppJsonRow>(
+    request: RunAppJsonRequest,
+  ): Promise<RunAppJsonResponse<T>> {
+    return runAppJson<T>(this.client, request);
   }
 
   /**

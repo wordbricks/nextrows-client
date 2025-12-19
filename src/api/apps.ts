@@ -63,8 +63,10 @@ export type RunAppJsonRequest = RunAppRequest;
 
 /**
  * Response from the run app JSON API endpoint.
+ *
+ * @typeParam T - The type of each row in the data array. Defaults to `AppJsonRow`.
  */
-export interface RunAppJsonResponse {
+export interface RunAppJsonResponse<T = AppJsonRow> {
   /**
    * Whether the request was successful.
    */
@@ -82,7 +84,7 @@ export interface RunAppJsonResponse {
    * ]
    * ```
    */
-  data?: AppJsonRow[];
+  data?: T[];
 
   /**
    * Unique identifier for this run.
@@ -171,6 +173,7 @@ export interface RunAppTableResponse {
  * the result as an array of JSON objects. Each object represents a row
  * with column names as keys.
  *
+ * @typeParam T - The type of each row in the response data array. Defaults to `AppJsonRow`.
  * @param client - The Axios instance to use for the request
  * @param request - The run app request parameters
  * @returns Promise resolving to the app run response with success status and JSON data
@@ -178,6 +181,7 @@ export interface RunAppTableResponse {
  *
  * @example
  * ```typescript
+ * // With default type
  * const result = await client.runAppJson({
  *   appId: "abc123xyz",
  *   inputs: [
@@ -191,13 +195,31 @@ export interface RunAppTableResponse {
  *     console.log(row.Name, row.Price);
  *   }
  * }
+ *
+ * // With custom type
+ * interface Product {
+ *   name: string;
+ *   price: number;
+ *   url: string;
+ * }
+ *
+ * const typedResult = await client.runAppJson<Product>({
+ *   appId: "abc123xyz",
+ *   inputs: [{ key: "url", value: "https://example.com/products" }]
+ * });
+ *
+ * if (typedResult.success && typedResult.data) {
+ *   for (const product of typedResult.data) {
+ *     console.log(product.name, product.price); // Fully typed!
+ *   }
+ * }
  * ```
  */
-export async function runAppJson(
+export async function runAppJson<T = AppJsonRow>(
   client: AxiosInstance,
   request: RunAppJsonRequest,
-): Promise<RunAppJsonResponse> {
-  const response = await client.post<RunAppJsonResponse>(
+): Promise<RunAppJsonResponse<T>> {
+  const response = await client.post<RunAppJsonResponse<T>>(
     "/v1/apps/run/json",
     request,
   );

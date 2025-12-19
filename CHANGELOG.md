@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1] - 2025-12-19
+
+### Added
+
+- **Generic type support for `runAppJson`**: The response data type can now be customized via generic type parameter
+  ```typescript
+  interface Product {
+    name: string;
+    price: number;
+    url: string;
+  }
+
+  const result = await client.runAppJson<Product>({
+    appId: "abc123xyz",
+    inputs: [{ key: "url", value: "https://example.com" }]
+  });
+
+  // result.data is now typed as Product[]
+  if (result.success && result.data) {
+    for (const product of result.data) {
+      console.log(product.name, product.price); // Fully typed!
+    }
+  }
+  ```
+
 ## [0.2.0] - 2025-12-18
 
 ### Breaking Changes
