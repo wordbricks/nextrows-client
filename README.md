@@ -102,6 +102,30 @@ if (result.success && result.data) {
 }
 ```
 
+#### Typed App Output (Zod Schema Copy)
+
+You can copy the Zod schema for an app's output item directly from the app page:
+`https://nextrows.com/app/[appId]`.
+
+```typescript
+import { z } from "zod/v4";
+
+const itemSchema = z.object({
+  managerFund: z.string(),
+  updated: z.string(),
+  holdingsUrl: z.string(),
+  managerCode: z.string(),
+  sourceUrl: z.string(),
+});
+
+type Item = z.infer<typeof itemSchema>;
+
+const result = await client.runAppJson<Item>({
+  appId: "appid",
+  inputs: [],
+});
+```
+
 ### Get Credits
 
 Get the current credit balance for the authenticated user.
